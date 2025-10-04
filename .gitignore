@@ -1,0 +1,14 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Node (only if you add npm packages later)
+node_modules/
+package-lock.json
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# Logs or temporary files
+*.log

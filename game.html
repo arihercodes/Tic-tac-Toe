@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic-Tac-Toe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #1e1e2f;
+      --text-dark: #ffffff;
+      --card-dark: #2a2a40;
+      --cell-dark: linear-gradient(135deg, #ff9a9e, #fad0c4);
+
+      --bg-light: #f4f6fb;
+      --text-light: #222222;
+      --card-light: #ffffff;
+      --cell-light: linear-gradient(135deg, #a1c4fd, #c2e9fb);
+
+      --accent: #ff6ec7;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      overflow-y: auto;
+      transition: all 0.3s ease;
+    }
+
+    h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: 2.5rem;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background: var(--card-dark);
+      padding: 15px 20px;
+      margin: 10px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      width: 95%;
+      max-width: 500px;
+      transition: background 0.3s ease;
+    }
+
+    .status {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 15px 0;
+      text-align: center;
+      visibility: hidden;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 12px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      border-radius: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2.5rem;
+      cursor: pointer;
+      background: var(--cell-dark);
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .cell:hover {
+      transform: scale(1.08);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    }
+    .cell.highlight {
+      box-shadow: 0 0 15px #00ff99, inset 0 0 12px #00ff99;
+    }
+
+    .scoreboard, .streakboard, .timer {
+      font-size: 1rem;
+      margin: 8px 0;
+    }
+
+    select, button {
+      margin: 5px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: transform 0.2s;
+    }
+    select:hover, button:hover {
+      transform: scale(1.05);
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    body.light {
+      background: var(--bg-light);
+      color: var(--text-light);
+    }
+    body.light .card {
+      background: var(--card-light);
+    }
+    body.light .cell {
+      background: var(--cell-light);
+      color: var(--text-light);
+    }
+  </style>
+</head>
+<body>
+  <h1>Tic Tac Toe</h1>
+
+  <div class="card">
+    <div>
+      Mode: 
+      <select id="mode">
+        <option value="2p">2 Players</option>
+        <option value="easy">Vs Computer (Easy)</option>
+        <option value="medium">Vs Computer (Medium)</option>
+        <option value="hard">Vs Computer (Hard)</option>
+      </select>
+    </div>
+    <div>
+      Avatar X: 
+      <select id="avatarX">
+        <option>❌</option><option>🐱</option><option>🐶</option><option>🍕</option><option>🍔</option>
+      </select>
+      Avatar O: 
+      <select id="avatarO">
+        <option>⭕</option><option>🐼</option><option>🐵</option><option>🍎</option><option>🍩</option>
+      </select>
+    </div>
+    <div class="scoreboard" id="scoreboard">X Wins: 0 | O Wins: 0 | Draws: 0</div>
+    <div class="streakboard" id="streakboard">X Streak: 0 | O Streak: 0</div>
+    <div class="timer" id="timer">Timer: 5</div>
+  </div>
+
+  <div class="status" id="status"></div>
+  <div class="board" id="board"></div>
+
+  <div>
+    <button onclick="createBoard()">Restart</button>
+    <button onclick="toggleTheme()">Switch Theme</button>
+  </div>
+
+  <script>
+    const boardElement = document.getElementById('board');
+    const statusElement = document.getElementById('status');
+    const scoreboardElement = document.getElementById('scoreboard');
+    const streakboardElement = document.getElementById('streakboard');
+    const timerElement = document.getElementById('timer');
+    const avatarXSelect = document.getElementById('avatarX');
+    const avatarOSelect = document.getElementById('avatarO');
+    const modeSelect = document.getElementById('mode');
+
+    let board, currentPlayer, gameActive, scores, streaks, countdown;
+
+    function createBoard() {
+      board = Array(9).fill(null);
+      currentPlayer = 'X';
+      gameActive = true;
+      statusElement.style.visibility = 'hidden';
+      boardElement.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = i;
+        cell.addEventListener('click', handleCellClick);
+        boardElement.appendChild(cell);
+      }
+      resetTimer();
+    }
+
+    function handleCellClick(e) {
+      const index = e.target.dataset.index;
+      if (!gameActive || board[index]) return;
+      board[index] = currentPlayer;
+      e.target.textContent = currentPlayer === 'X' ? avatarXSelect.value : avatarOSelect.value;
+      if (checkWinner()) return;
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      resetTimer();
+      if (['easy','medium','hard'].includes(modeSelect.value) && currentPlayer==='O') {
+        setTimeout(computerMove, 400);
+      }
+    }
+
+    function computerMove() {
+      if (!gameActive) return;
+      let move;
+      if (modeSelect.value==='easy') {
+        let available = board.map((v,i)=>v?null:i).filter(v=>v!==null);
+        move = available[Math.floor(Math.random()*available.length)];
+      } else if (modeSelect.value==='medium') {
+        move = findWinningMove('O') || findWinningMove('X') || randomMove();
+      } else if (modeSelect.value==='hard') {
+        move = minimax(board,'O').index;
+      }
+      const cell = document.querySelector(`.cell[data-index='${move}']`);
+      board[move]='O';
+      cell.textContent=avatarOSelect.value;
+      if (checkWinner()) return;
+      currentPlayer='X';
+      resetTimer();
+    }
+
+    function randomMove() {
+      let available = board.map((v,i)=>v?null:i).filter(v=>v!==null);
+      return available[Math.floor(Math.random()*available.length)];
+    }
+
+    function findWinningMove(player) {
+      for (let i=0;i<9;i++){
+        if(!board[i]){board[i]=player;
+          if(isWinner(player)){board[i]=null;return i;}
+          board[i]=null;
+        }
+      }
+      return null;
+    }
+
+    function checkWinner(){
+      const winPatterns=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      for(let pattern of winPatterns){
+        const [a,b,c]=pattern;
+        if(board[a]&&board[a]===board[b]&&board[a]===board[c]){
+          gameActive=false;
+          clearInterval(countdown); // stop timer
+          [a,b,c].forEach(i=>document.querySelector(`.cell[data-index='${i}']`).classList.add('highlight'));
+          statusElement.textContent=`${board[a]} Wins!`;
+          statusElement.style.visibility='visible';
+          updateScore(board[a]);
+          return true;
+        }
+      }
+      if(!board.includes(null)){
+        gameActive=false;
+        clearInterval(countdown);
+        statusElement.textContent="It's a Draw!";
+        statusElement.style.visibility='visible';
+        updateScore('Draw');
+        return true;
+      }
+      return false;
+    }
+
+    function isWinner(player){
+      const winPatterns=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      return winPatterns.some(([a,b,c])=>board[a]===player&&board[b]===player&&board[c]===player);
+    }
+
+    function minimax(newBoard,player){
+      const avail=newBoard.map((v,i)=>v?null:i).filter(v=>v!==null);
+      if(isWinner('X'))return{score:-10};
+      if(isWinner('O'))return{score:10};
+      if(avail.length===0)return{score:0};
+      const moves=[];
+      for(let i of avail){
+        const move={index:i};
+        newBoard[i]=player;
+        const result=minimax(newBoard,player==='O'?'X':'O');
+        move.score=result.score;
+        newBoard[i]=null;
+        moves.push(move);
+      }
+      let bestMove;
+      if(player==='O'){
+        let bestScore=-Infinity;
+        moves.forEach((m,i)=>{if(m.score>bestScore){bestScore=m.score;bestMove=i;}});
+      } else {
+        let bestScore=Infinity;
+        moves.forEach((m,i)=>{if(m.score<bestScore){bestScore=m.score;bestMove=i;}});
+      }
+      return moves[bestMove];
+    }
+
+    function updateScore(winner){
+      if(!scores) scores={X:0,O:0,Draw:0};
+      if(!streaks) streaks={X:0,O:0};
+      if(winner==='X'){scores.X++;streaks.X++;streaks.O=0;}
+      else if(winner==='O'){scores.O++;streaks.O++;streaks.X=0;}
+      else{scores.Draw++;}
+      scoreboardElement.textContent=`X Wins: ${scores.X} | O Wins: ${scores.O} | Draws: ${scores.Draw}`;
+      streakboardElement.textContent=`X Streak: ${streaks.X} | O Streak: ${streaks.O}`;
+    }
+
+    function resetTimer(){
+      clearInterval(countdown);
+      if(!gameActive) return;
+      let time=5;
+      timerElement.textContent=`Timer: ${time}`;
+      countdown=setInterval(()=>{
+        time--;
+        timerElement.textContent=`Timer: ${time}`;
+        if(time===0){
+          clearInterval(countdown);
+          gameActive=false;
+          statusElement.textContent=`${currentPlayer} ran out of time!`;
+          statusElement.style.visibility='visible';
+        }
+      },1000);
+    }
+
+    function toggleTheme(){
+      document.body.classList.toggle('light');
+    }
+
+    createBoard();
+  </script>
+</body>
+</html>
